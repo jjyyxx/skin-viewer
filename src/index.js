@@ -1,6 +1,28 @@
-import * as THREE from 'three'
+const THREE = require('three')
 window.THREE = THREE
-import 'three/examples/js/controls/OrbitControls'
+require('three/examples/js/controls/OrbitControls')
+
+// import { PerspectiveCamera } from 'three/src/cameras/PerspectiveCamera'
+// import { Scene } from 'three/src/scenes/Scene'
+// import { WebGLRenderer } from 'three/src/renderers/WebGLRenderer'
+// import { BoxGeometry } from 'three/src/geometries/BoxGeometry'
+// import { Mesh } from 'three/src/objects/Mesh'
+// import { Object3D } from 'three/src/core/Object3D'
+// import { Texture } from 'three/src/textures/Texture'
+// import { MeshBasicMaterial } from 'three/src/materials/MeshBasicMaterial'
+// import { NearestFilter } from 'three/src/constants'
+
+// const THREE = window.THREE = {
+//   PerspectiveCamera,
+//   Scene,
+//   WebGLRenderer,
+//   BoxGeometry,
+//   Mesh,
+//   Object3D,
+//   Texture,
+//   MeshBasicMaterial,
+//   NearestFilter
+// }
 
 function create2DImage(skin, scale) {
   const width = 64 * scale, height = 64 * scale

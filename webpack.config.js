@@ -1,9 +1,11 @@
 const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin')
+const webpack = require('webpack')
 
-module.exports = {
-  mode: process.env.WEBPACK_SERVE ? 'development' : 'production',
+const mode = process.env.WEBPACK_SERVE ? 'development' : 'production'
+const config = {
+  mode,
   entry: {
     app: './src/index.js'
   },
@@ -20,15 +22,18 @@ module.exports = {
         test: /\.js$/,
         exclude: /node_modules/,
         loader: 'eslint-loader'
-      }
+      },
+      // { test: /\.glsl$/, loader: 'ignore-loader' }
     ]
   },
   plugins: [
     // new CleanWebpackPlugin(['dist']),
     new HtmlWebpackPlugin({
       title: 'Development',
-      template: 'index.html'
-    })
+      template: 'index.html',
+      minify: true
+    }),
+    // new webpack.IgnorePlugin(/\.glsl$/)
   ],
   output: {
     filename: '[name].bundle.js',
@@ -47,3 +52,9 @@ module.exports = {
     ]
   }
 }
+if (mode === 'production') {
+  config.externals = {
+    three: 'THREE'
+  }
+}
+module.exports = config
