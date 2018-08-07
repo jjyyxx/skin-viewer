@@ -6,8 +6,10 @@ module.exports = {
     },
     "extends": "eslint:recommended",
     "parserOptions": {
-        "ecmaVersion": 2018
+        "ecmaVersion": 2018,
+        "sourceType": "module"
     },
+    
     "rules": {
         "indent": [
             "error",
@@ -24,6 +26,7 @@ module.exports = {
         "eqeqeq": [
             "error",
             "always"
-        ]
+        ],
+        "no-unused-vars": "off"
     }
 };
