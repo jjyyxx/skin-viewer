@@ -8,6 +8,14 @@
     "dev": "webpack-serve webpack.config.js",
     "build": "webpack"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jjyyxx/skin-viewer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jjyyxx/skin-viewer/issues"
+  },
+  "homepage": "https://github.com/jjyyxx/skin-viewer#readme",
   "author": "jjyyxx",
   "license": "MIT",
   "dependencies": {
