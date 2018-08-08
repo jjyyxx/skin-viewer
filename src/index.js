@@ -39,7 +39,10 @@ function create2DImage(skin, scale) {
 /**
  * @param {ImageBitmap} skin 
  */
-async function create3DModel(skin, slim = false) {
+async function create3DModel(skin, slim = 'auto') {
+  if (skin.width !== 64) throw new Error('Width is not 64!')
+  if (![32, 64].includes(skin.height)) throw new Error('Height is not 64 or 32!')
+
   const scene = new THREE.Scene()
   const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
   camera.position.z = 50
@@ -56,11 +59,12 @@ async function create3DModel(skin, slim = false) {
   controls.maxDistance = 500
 
   const parts = await disassemble(skin, slim)
+  const isSlim = parts.isSlim
 
   const headModel = new THREE.BoxGeometry(8, 8, 8)
   const bodyModel = new THREE.BoxGeometry(8, 12, 4)
   const legModel = new THREE.BoxGeometry(4, 12, 4)
-  const armModel = new THREE.BoxGeometry(slim ? 3 : 4, 12, 4)
+  const armModel = new THREE.BoxGeometry(isSlim ? 3 : 4, 12, 4)
 
   const head = new THREE.Mesh(headModel, getCubeMaterial(parts.head))
   head.position.set(0, 0, 0)
@@ -69,13 +73,13 @@ async function create3DModel(skin, slim = false) {
   body.position.set(0, -10, 0)
 
   const leftArm = new THREE.Mesh(armModel, getCubeMaterial(parts.leftArm))
-  leftArm.position.set(slim ? 5.5 : 6, -10, 0)
+  leftArm.position.set(isSlim ? 5.5 : 6, -10, 0)
 
   const leftLeg = new THREE.Mesh(legModel, getCubeMaterial(parts.leftLeg))
   leftLeg.position.set(2, -22, 0)
 
   const rightArm = new THREE.Mesh(armModel, getCubeMaterial(parts.rightArm))
-  rightArm.position.set(slim ? -5.5 : -6, -10, 0)
+  rightArm.position.set(isSlim ? -5.5 : -6, -10, 0)
 
   const rightLeg = new THREE.Mesh(legModel, getCubeMaterial(parts.rightLeg))
   rightLeg.position.set(-2, -22, 0)
@@ -98,40 +102,118 @@ async function create3DModel(skin, slim = false) {
 }
 
 /**
- * @param {ImageBitmap} skin 
- * @param {boolean} slim 
+ * @param {{[key in 'top' | 'buttom' | 'right' | 'front' | 'left' | 'back']: ImageBitmap}} right 
  */
-function disassemble(skin, slim = false) {
+function mapRightToLeft(right) {
+  return Promise.all([
+    right.top,
+    right.buttom,
+    right.left,
+    right.front,
+    right.right,
+    right.back
+  ].map((image) => flip(image, true))).then((images) => {
+    return {
+      top: images[0],
+      buttom: images[1],
+      right: images[2],
+      front: images[3],
+      left: images[4],
+      back: images[5]
+    }
+  })
+}
+
+/**
+ * @param {ImageBitmap} skin
+ */
+function detectSlim(skin) {
+  const canvas = document.createElement('canvas')
+  canvas.width = 16
+  canvas.height = 16
+  const ctx = canvas.getContext('2d')
+  ctx.drawImage(skin, 40, 16, 16, 16, 0, 0, 16, 16)
+  const [R, G, B, A] = ctx.getImageData(0, 0, 1, 1).data
+  const [r, g, b, a] = ctx.getImageData(15, 15, 1, 1).data
+  return A === 0 ? a === 0 : R === r && G === g && B === b && A === a
+}
+
+function getTransparentRect() {
+  const canvas = document.createElement('canvas')
+  canvas.width = 1
+  canvas.height = 1
+  return createImageBitmap(canvas)
+}
+
+/**
+ * @param {ImageBitmap} skin 
+ * @param {'auto' | 'slim' | 'default'} slim 
+ */
+function disassemble(skin, slim = 'auto') {
+  const legacy = skin.height === 32
+  const isSlim = slim === 'auto' ? detectSlim(skin) : slim === 'slim'
+
   const parts = [
     getConvex(skin, 0, 0, 8),
     getConvex(skin, 16, 16, 12, 8, 4),
-    getConvex(skin, 40, 16, 12, slim ? 3 : 4, 4),
+    getConvex(skin, 40, 16, 12, isSlim ? 3 : 4, 4),
     getConvex(skin, 0, 16, 12, 4),
-    getConvex(skin, 32, 0, 8),
-    // after 1.8
-    getConvex(skin, 32, 48, 12, slim ? 3 : 4, 4),
-    getConvex(skin, 16, 48, 12, 4),
-    // layer 2
-    getConvex(skin, 16, 32, 12, 8, 4),
-    getConvex(skin, 40, 32, 12, 4),
-    getConvex(skin, 0, 32, 12, 4),
-    getConvex(skin, 48, 48, 12, 4),
-    getConvex(skin, 0, 48, 12, 4)
+    getConvex(skin, 32, 0, 8)
   ]
-  return Promise.all(parts).then((convex) => {
-    return {
-      head: convex[0],
-      body: convex[1],
-      rightArm: convex[2],
-      rightLeg: convex[3],
-      helmet: convex[4],
-      leftArm: convex[5],
-      leftLeg: convex[6],
-      body2: convex[7],
-      rightArm2: convex[8],
-      rightLeg2: convex[9],
-      leftArm2: convex[10],
-      leftLeg2: convex[11]
+  if (!legacy) {
+    parts.push(
+      // after 1.8
+      getConvex(skin, 32, 48, 12, isSlim ? 3 : 4, 4),
+      getConvex(skin, 16, 48, 12, 4),
+      // layer 2
+      getConvex(skin, 16, 32, 12, 8, 4),
+      getConvex(skin, 40, 32, 12, 4),
+      getConvex(skin, 0, 32, 12, 4),
+      getConvex(skin, 48, 48, 12, 4),
+      getConvex(skin, 0, 48, 12, 4)
+    )
+  } else {
+    parts.push(getTransparentRect())
+  }
+  return Promise.all(parts).then(async (convex) => {
+    const rightArm = convex[2]
+    const rightLeg = convex[3]
+    const transparent = convex[5]
+    if (legacy) {
+      const leftArm = await mapRightToLeft(rightArm)
+      const leftLeg = await mapRightToLeft(rightLeg)
+      return {
+        head: convex[0],
+        body: convex[1],
+        rightArm,
+        rightLeg,
+        helmet: convex[4],
+        leftArm,
+        leftLeg,
+        body2: transparent,
+        rightArm2: transparent,
+        rightLeg2: transparent,
+        leftArm2: transparent,
+        leftLeg2: transparent,
+        isSlim
+      }
+    } else {
+      return {
+        head: convex[0],
+        body: convex[1],
+        rightArm: convex[2],
+        rightLeg: convex[3],
+        helmet: convex[4],
+
+        leftArm: convex[5],
+        leftLeg: convex[6],
+        body2: convex[7],
+        rightArm2: convex[8],
+        rightLeg2: convex[9],
+        leftArm2: convex[10],
+        leftLeg2: convex[11],
+        isSlim
+      }
     }
   })
 }
@@ -160,8 +242,8 @@ function getConvex(image, sx, sy, wz, wx, wy, flipY = true) {
   ]
   return Promise.all(promises).then(async (images) => {
     return {
-      top: await flip(images[0]), // FIXME: weird
-      buttom: await flip(images[1]),
+      top: await flip(images[0], false), // FIXME: weird
+      buttom: await flip(images[1], false),
       right: images[2],
       front: images[3],
       left: images[4],
@@ -173,13 +255,18 @@ function getConvex(image, sx, sy, wz, wx, wy, flipY = true) {
 /**
  * @param {ImageBitmap} image 
  */
-async function flip(image) {
+function flip(image, isX) {
   const canvas = document.createElement('canvas')
   canvas.width = image.width
   canvas.height = image.height
   const ctx = canvas.getContext('2d')
-  ctx.scale(1, -1)
-  ctx.drawImage(image, 0, -image.height)
+  const xx = isX ? -1 : 1
+  ctx.scale(xx, -xx)
+  if (isX) {
+    ctx.drawImage(image, -image.width, 0)
+  } else {
+    ctx.drawImage(image, 0, -image.height)
+  }
   return createImageBitmap(canvas)
 }
 
@@ -194,7 +281,7 @@ function getCubeMaterial(convex) {
     convex.buttom,
     convex.front,
     convex.back
-  ].map((image, index) => {
+  ].map((image) => {
     const texture = new THREE.Texture(image)
     texture.magFilter = THREE.NearestFilter
     texture.minFilter = THREE.NearestFilter
@@ -203,25 +290,25 @@ function getCubeMaterial(convex) {
   })
 }
 
-const picture = document.getElementById('picture')
-const check = document.getElementById('slim')
-const load = document.getElementById('load')
-load.addEventListener('click', () => {
-  if (picture.files.length === 0) return
-  const canvas = document.getElementsByTagName('canvas')
-  for (const c of canvas) {
-    c.remove()
-  }
+// const picture = document.getElementById('picture')
+// const check = document.getElementById('slim')
+// const load = document.getElementById('load')
+// load.addEventListener('click', () => {
+//   if (picture.files.length === 0) return
+//   const canvas = document.getElementsByTagName('canvas')
+//   for (const c of canvas) {
+//     c.remove()
+//   }
 
-  const pic = picture.files[0]
-  createImageBitmap(pic, {
-    resizeQuality: 'pixelated'
-  }).then((r) => create3DModel(r, check.checked))
-})
-
-// async function loadImage(path) {
-//   return createImageBitmap(await (await fetch(path)).blob(), {
+//   const pic = picture.files[0]
+//   createImageBitmap(pic, {
 //     resizeQuality: 'pixelated'
-//   })
-// }
-// loadImage('steve.png').then((r) => (create2DImage(r, 16), create3DModel(r, false)))
+//   }).then((r) => create3DModel(r, check.checked))
+// })
+
+async function loadImage(path) {
+  return createImageBitmap(await (await fetch(path)).blob(), {
+    resizeQuality: 'pixelated'
+  })
+}
+loadImage('steve.png').then((r) => (/* create2DImage(r, 16),  */create3DModel(r)))
