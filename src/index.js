@@ -47,7 +47,7 @@ async function create3DModel(skin, slim = 'auto') {
   const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
   camera.position.z = 50
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true })
+  const renderer = new THREE.WebGLRenderer({ antialias: true, precision: 'highp', powerPreference: 'high-performance' })
   renderer.setSize(window.innerWidth, window.innerHeight)
 
   const controls = new THREE.OrbitControls(camera, renderer.domElement)
@@ -62,33 +62,59 @@ async function create3DModel(skin, slim = 'auto') {
   const isSlim = parts.isSlim
 
   const headModel = new THREE.BoxGeometry(8, 8, 8)
+  const head2Model = new THREE.BoxGeometry(9, 9, 9)
+  
   const bodyModel = new THREE.BoxGeometry(8, 12, 4)
+  const body2Model = new THREE.BoxGeometry(9, 13.5, 4.5)
+
   const legModel = new THREE.BoxGeometry(4, 12, 4)
+  const leg2Model = new THREE.BoxGeometry(4.5, 13.5, 4.5)
+
   const armModel = new THREE.BoxGeometry(isSlim ? 3 : 4, 12, 4)
+  const arm2Model = new THREE.BoxGeometry(isSlim ? 3.375 : 4.5, 13.5, 4.5)
 
   const head = new THREE.Mesh(headModel, getCubeMaterial(parts.head))
   head.position.set(0, 0, 0)
+  const head2 = new THREE.Mesh(head2Model, getCubeMaterial(parts.helmet, true))
+  head2.position.set(0, 0, 0)
 
   const body = new THREE.Mesh(bodyModel, getCubeMaterial(parts.body))
   body.position.set(0, -10, 0)
+  const body2Material = getCubeMaterial(parts.body2, true)
+  // body2Material.forEach((mat) => {
+  //   mat.polygonOffset = true
+  //   mat.polygonOffsetFactor = -0.1
+  // })
+  const body2 = new THREE.Mesh(body2Model, body2Material)
+  body2.position.set(0, -10, 0)
 
   const leftArm = new THREE.Mesh(armModel, getCubeMaterial(parts.leftArm))
   leftArm.position.set(isSlim ? 5.5 : 6, -10, 0)
+  const leftArm2 = new THREE.Mesh(arm2Model, getCubeMaterial(parts.leftArm2, true))
+  leftArm2.position.set(isSlim ? 5.5 : 6, -10, 0)
 
   const leftLeg = new THREE.Mesh(legModel, getCubeMaterial(parts.leftLeg))
   leftLeg.position.set(2, -22, 0)
+  const leftLeg2 = new THREE.Mesh(leg2Model, getCubeMaterial(parts.leftLeg2, true))
+  leftLeg2.position.set(2, -22, 0)
 
   const rightArm = new THREE.Mesh(armModel, getCubeMaterial(parts.rightArm))
   rightArm.position.set(isSlim ? -5.5 : -6, -10, 0)
+  const rightArm2 = new THREE.Mesh(arm2Model, getCubeMaterial(parts.rightArm2, true))
+  rightArm2.position.set(isSlim ? -5.5 : -6, -10, 0)
 
   const rightLeg = new THREE.Mesh(legModel, getCubeMaterial(parts.rightLeg))
   rightLeg.position.set(-2, -22, 0)
+  const rightLeg2 = new THREE.Mesh(leg2Model, getCubeMaterial(parts.rightLeg2, true))
+  rightLeg2.position.set(-2, -22, 0)
 
   const all = new THREE.Object3D()
-  all.add(head, body, leftArm, leftLeg, rightArm, rightLeg)
+  all.add(head, body, leftArm, leftLeg, rightArm, rightLeg,
+    head2, body2, leftArm2, leftLeg2, rightArm2, rightLeg2)
   // const axesHelper = new THREE.AxesHelper(5)
   // scene.add(axesHelper)
   scene.add(all)
+  scene.background = new THREE.Color(0xff0000)
 
   document.body.appendChild(renderer.domElement)
 
@@ -154,23 +180,23 @@ function disassemble(skin, slim = 'auto') {
   const isSlim = slim === 'auto' ? detectSlim(skin) : slim === 'slim'
 
   const parts = [
-    getConvex(skin, 0, 0, 8),
-    getConvex(skin, 16, 16, 12, 8, 4),
-    getConvex(skin, 40, 16, 12, isSlim ? 3 : 4, 4),
-    getConvex(skin, 0, 16, 12, 4),
-    getConvex(skin, 32, 0, 8)
+    getConvex(skin, 0, 0, 8, 8, 8, false),
+    getConvex(skin, 16, 16, 12, 8, 4, false),
+    getConvex(skin, 40, 16, 12, isSlim ? 3 : 4, 4, false),
+    getConvex(skin, 0, 16, 12, 4, 4, false),
+    getConvex(skin, 32, 0, 8, 8, 8, true)
   ]
   if (!legacy) {
     parts.push(
       // after 1.8
-      getConvex(skin, 32, 48, 12, isSlim ? 3 : 4, 4),
-      getConvex(skin, 16, 48, 12, 4),
+      getConvex(skin, 32, 48, 12, isSlim ? 3 : 4, 4, false),
+      getConvex(skin, 16, 48, 12, 4, 4, false),
       // layer 2
-      getConvex(skin, 16, 32, 12, 8, 4),
-      getConvex(skin, 40, 32, 12, 4),
-      getConvex(skin, 0, 32, 12, 4),
-      getConvex(skin, 48, 48, 12, 4),
-      getConvex(skin, 0, 48, 12, 4)
+      getConvex(skin, 16, 32, 12, 8, 4, true),
+      getConvex(skin, 40, 32, 12, 4, 4, true),
+      getConvex(skin, 0, 32, 12, 4, 4, true),
+      getConvex(skin, 48, 48, 12, 4, 4, true),
+      getConvex(skin, 0, 48, 12, 4, 4, true)
     )
   } else {
     parts.push(getTransparentRect())
@@ -179,6 +205,14 @@ function disassemble(skin, slim = 'auto') {
     const rightArm = convex[2]
     const rightLeg = convex[3]
     const transparent = convex[5]
+    const transparentConvex = {
+      top: transparent,
+      buttom: transparent,
+      right: transparent,
+      front: transparent,
+      left: transparent,
+      back: transparent
+    }
     if (legacy) {
       const leftArm = await mapRightToLeft(rightArm)
       const leftLeg = await mapRightToLeft(rightLeg)
@@ -190,11 +224,11 @@ function disassemble(skin, slim = 'auto') {
         helmet: convex[4],
         leftArm,
         leftLeg,
-        body2: transparent,
-        rightArm2: transparent,
-        rightLeg2: transparent,
-        leftArm2: transparent,
-        leftLeg2: transparent,
+        body2: transparentConvex,
+        rightArm2: transparentConvex,
+        rightLeg2: transparentConvex,
+        leftArm2: transparentConvex,
+        leftLeg2: transparentConvex,
         isSlim
       }
     } else {
@@ -219,26 +253,71 @@ function disassemble(skin, slim = 'auto') {
 }
 
 /**
+ * @param {ImageBitmap} image 
+ */
+function transparentToBlack(image) {
+  const canvas = document.createElement('canvas')
+  canvas.width = image.width
+  canvas.height = image.height
+  const ctx = canvas.getContext('2d')
+  ctx.drawImage(image, 0, 0)
+  const imageData = ctx.getImageData(0, 0, image.width, image.height)
+  const data = imageData.data
+  const [R, G, B, A] = data
+  for (let i = 4; i < 4 * image.width * image.height; i += 4) {
+    if (A === 0 && data[i + 3] === 0 || R === data[i] && G === data[i + 1] && B === data[i + 2] && A === data[i + 3]) {
+      data[i] = 0
+      data[i + 1] = 0
+      data[i + 2] = 0
+      data[i + 3] = 255
+    }
+  }
+  return createImageBitmap(imageData, {imageOrientation: 'flipY'})
+}
+
+/**
+ * @param {ImageBitmap} image 
+ */
+function matteToTransparent(image) {
+  const canvas = document.createElement('canvas')
+  canvas.width = image.width
+  canvas.height = image.height
+  const ctx = canvas.getContext('2d')
+  ctx.drawImage(image, 0, 0)
+  const imageData = ctx.getImageData(0, 0, image.width, image.height)
+  const data = imageData.data
+  const [R, G, B, A] = data
+  if (A === 0) return createImageBitmap(image, {imageOrientation: 'flipY'})
+  for (let i = 4; i < 4 * image.width * image.height; i += 4) {
+    if (R === data[i] && G === data[i + 1] && B === data[i + 2] && A === data[i + 3]) {
+      // data[i] = 0
+      // data[i + 1] = 0
+      // data[i + 2] = 0
+      data[i + 3] = 0
+    }
+  }
+  return createImageBitmap(imageData, {imageOrientation: 'flipY'})
+}
+
+/**
  * get the convex
  * @param {ImageBitmap} image 
  * @param {number} sx 
  * @param {number} sy 
- * @param {number} [wx] 
+ * @param {number} wx
  * @param {number} wz 
- * @param {number} [wy] 
+ * @param {number} wy 
  * @returns {Promise<{[key in 'top' | 'buttom' | 'right' | 'front' | 'left' | 'back']: ImageBitmap}>}
  */
-function getConvex(image, sx, sy, wz, wx, wy, flipY = true) {
-  if (wx === undefined) wx = wz
-  if (wy === undefined) wy = wx
-  const options = { imageOrientation: flipY ? 'flipY' : 'none' }
+async function getConvex(image, sx, sy, wz, wx, wy, transparent, flipY = true) {
+  const subImage = await (transparent ? matteToTransparent : transparentToBlack)(await createImageBitmap(image, sx, sy, wy + wx + wy + wx, wy + wz))
   const promises = [
-    createImageBitmap(image, sx + wy, sy, wx, wy, ),
-    createImageBitmap(image, sx + wy + wx, sy, wx, wy, options),
-    createImageBitmap(image, sx, sy + wy, wy, wz, options),
-    createImageBitmap(image, sx + wy, sy + wy, wx, wz, options),
-    createImageBitmap(image, sx + wy + wx, sy + wy, wy, wz, options),
-    createImageBitmap(image, sx + wy + wx + wy, sy + wy, wx, wz, options),
+    createImageBitmap(subImage, wy, wz, wx, wy),
+    createImageBitmap(subImage, wy + wx, wz, wx, wy),
+    createImageBitmap(subImage, 0, 0, wy, wz),
+    createImageBitmap(subImage, wy, 0, wx, wz),
+    createImageBitmap(subImage, wy + wx, 0, wy, wz),
+    createImageBitmap(subImage, wy + wx + wy, 0, wx, wz),
   ]
   return Promise.all(promises).then(async (images) => {
     return {
@@ -273,7 +352,7 @@ function flip(image, isX) {
 /**
  * @param {{[key in 'top' | 'buttom' | 'right' | 'front' | 'left' | 'back']: ImageBitmap}} convex 
  */
-function getCubeMaterial(convex) {
+function getCubeMaterial(convex, transparent = false) {
   return [
     convex.left,
     convex.right,
@@ -286,7 +365,7 @@ function getCubeMaterial(convex) {
     texture.magFilter = THREE.NearestFilter
     texture.minFilter = THREE.NearestFilter
     texture.needsUpdate = true
-    return new THREE.MeshBasicMaterial({ map: texture })
+    return new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide, transparent })
   })
 }
 
@@ -311,4 +390,4 @@ async function loadImage(path) {
     resizeQuality: 'pixelated'
   })
 }
-loadImage('steve.png').then((r) => (/* create2DImage(r, 16),  */create3DModel(r)))
+loadImage('alex.png').then((r) => (/* create2DImage(r, 16),  */create3DModel(r)))
