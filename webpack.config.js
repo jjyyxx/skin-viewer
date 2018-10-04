@@ -2,7 +2,11 @@ const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin')
 const webpack = require('webpack')
+// webpack({
+//   output: {
 
+//   }
+// })
 const mode = process.env.WEBPACK_SERVE ? 'development' : 'production'
 const config = {
   mode,
@@ -36,8 +40,10 @@ const config = {
     // new webpack.IgnorePlugin(/\.glsl$/)
   ],
   output: {
-    filename: '[name].bundle.js',
-    path: path.resolve(__dirname, 'dist')
+    filename: 'MCViewer.min.js',
+    path: path.resolve(__dirname, 'dist'),
+    libraryTarget: 'window',
+    library: 'MCViewer'
   },
   optimization: {
     minimizer: [

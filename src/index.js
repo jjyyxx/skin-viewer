@@ -1,6 +1,5 @@
-const THREE = require('three')
-window.THREE = THREE
-require('three/examples/js/controls/OrbitControls')
+import * as THREE from 'three'
+import 'three/examples/js/controls/OrbitControls'
 
 // import { PerspectiveCamera } from 'three/src/cameras/PerspectiveCamera'
 // import { Scene } from 'three/src/scenes/Scene'
@@ -24,7 +23,7 @@ require('three/examples/js/controls/OrbitControls')
 //   NearestFilter
 // }
 
-function create2DImage(skin, scale) {
+export function create2DImage(skin, scale) {
   const width = 64 * scale, height = 64 * scale
   const canvas = document.createElement('canvas')
   canvas.width = width
@@ -33,13 +32,14 @@ function create2DImage(skin, scale) {
   const ctx = canvas.getContext('2d')
   ctx.imageSmoothingEnabled = false
   ctx.drawImage(skin, 0, 0, width, height)
-  document.body.appendChild(canvas)
+  return canvas
 }
 
 /**
+ * @param {HTMLElement | string} element
  * @param {ImageBitmap} skin 
  */
-async function create3DModel(skin, slim = 'auto') {
+export async function create3DModel(skin, slim = 'auto') {
   if (skin.width !== 64) throw new Error('Width is not 64!')
   if (![32, 64].includes(skin.height)) throw new Error('Height is not 64 or 32!')
 
@@ -116,8 +116,6 @@ async function create3DModel(skin, slim = 'auto') {
   scene.add(all)
   scene.background = new THREE.Color(0xff0000)
 
-  document.body.appendChild(renderer.domElement)
-
   function animate() {
     requestAnimationFrame(animate)
     controls.update()
@@ -125,6 +123,7 @@ async function create3DModel(skin, slim = 'auto') {
   }
 
   animate()
+  return renderer.domElement
 }
 
 /**
@@ -385,9 +384,9 @@ function getCubeMaterial(convex, transparent = false) {
 //   }).then((r) => create3DModel(r, check.checked))
 // })
 
-async function loadImage(path) {
-  return createImageBitmap(await (await fetch(path)).blob(), {
-    resizeQuality: 'pixelated'
-  })
-}
-loadImage('alex.png').then((r) => (/* create2DImage(r, 16),  */create3DModel(r)))
+// async function loadImage(path) {
+//   return createImageBitmap(await (await fetch(path)).blob(), {
+//     resizeQuality: 'pixelated'
+//   })
+// }
+// loadImage('alex.png').then((r) => (/* create2DImage(r, 16),  */create3DModel(r)))

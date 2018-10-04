@@ -1,6 +1,6 @@
 {
   "name": "skin-viewer",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "",
   "main": "src/index.js",
   "scripts": {
@@ -29,5 +29,8 @@
     "webpack": "^4.16.5",
     "webpack-cli": "^3.1.0",
     "webpack-serve": "^2.0.2"
-  }
+  },
+  "files": [
+    "dist/MCViewer.min.js"
+  ]
 }
